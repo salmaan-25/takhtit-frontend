@@ -39,7 +39,7 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
       if (refreshResult.data) {
         // Success
         api.dispatch(setCredentials({ 
-          access: (refreshResult.data as any).access, 
+          access: (refreshResult.data as { access: string }).access, 
           refresh 
         }))
         // Retry
