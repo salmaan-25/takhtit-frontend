@@ -1,4 +1,4 @@
-export interface User {
+﻿export interface User {
     id: number
     username: string
     email: string
@@ -37,17 +37,11 @@ export interface Ticket {
     sprint: number | null
     reporter: number
     assignee: number | null
+    assignee_username: string | null
     status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE'
     priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
     created_at: string
     updated_at: string
-}
-
-export interface PaginatedResponse<T> {
-    count: number
-    next: string | null
-    previous: string | null
-    results: T[]
 }
 
 export interface AuthTokens {

@@ -1,16 +1,18 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { AuthTokens } from '../../types'
+﻿import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import type { AuthTokens, User } from '../../types'
 
 interface AuthState {
     access: string | null
     refresh: string | null
     isAuthenticated: boolean
+    currentUser: User | null
 }
 
 const initialState: AuthState = {
     access: localStorage.getItem('access_token'),
     refresh: localStorage.getItem('refresh_token'),
     isAuthenticated: !!localStorage.getItem('access_token'),
+    currentUser: null,
 }
 
 const authSlice = createSlice({
@@ -24,15 +26,19 @@ const authSlice = createSlice({
             localStorage.setItem('access_token', action.payload.access)
             localStorage.setItem('refresh_token', action.payload.refresh)
         },
+        setCurrentUser: (state, action: PayloadAction<User>) => {
+            state.currentUser = action.payload
+        },
         logOut: (state) => {
             state.access = null
             state.refresh = null
             state.isAuthenticated = false
+            state.currentUser = null
             localStorage.removeItem('access_token')
             localStorage.removeItem('refresh_token')
         },
     },
 })
 
-export const { setCredentials, logOut } = authSlice.actions
+export const { setCredentials, setCurrentUser, logOut } = authSlice.actions
 export default authSlice.reducer
