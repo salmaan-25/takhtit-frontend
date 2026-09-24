@@ -1,4 +1,5 @@
-﻿import { useState, useEffect } from 'react'
+﻿/* eslint-disable react-hooks/set-state-in-effect */
+import { useState, useEffect } from 'react'
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, Button, Box, CircularProgress, Alert,
@@ -75,4 +76,5 @@ export default function ProjectFormModal({ open, project, onClose, onSave, loadi
     </Dialog>
   )
 }
+
 

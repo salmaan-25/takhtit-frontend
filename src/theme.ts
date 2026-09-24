@@ -215,7 +215,7 @@ export const appTheme = createTheme({
             borderRadius: 8,
             transition: 'box-shadow 0.18s ease',
             '&.Mui-focused': {
-              boxShadow: ({ theme }: { theme: any }) =>
+              boxShadow: ({ theme }: { theme: import('@mui/material/styles').Theme }) =>
                 `0 0 0 3px ${alpha(theme.palette.primary.main, 0.18)}`,
             },
           },
@@ -279,4 +279,5 @@ export const appTheme = createTheme({
     },
   },
 })
+
 
