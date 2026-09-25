@@ -14,6 +14,7 @@ import {
 import type { Sprint, Project } from '../types'
 import SprintFormModal from '../components/sprints/SprintFormModal'
 import ConfirmDeleteDialog from '../components/common/ConfirmDeleteDialog'
+import { usePermissions } from '../hooks/usePermissions'
 
 const STATUS_COLOR: Record<Sprint['status'], 'warning' | 'success' | 'default'> = {
   PLANNED: 'warning',
@@ -28,6 +29,7 @@ export default function SprintsPage() {
   const [sprintToDelete, setSprintToDelete] = useState<Sprint | null>(null)
   const [snackbar, setSnackbar] = useState<string | null>(null)
 
+  const { canCreateSprint, canEditSprint, canDeleteSprint } = usePermissions()
   const { data: projectsData } = useGetProjectsQuery()
   const { data, isLoading, isError } = useGetSprintsQuery(
     projectFilter !== '' ? { project: projectFilter as number } : undefined
@@ -79,7 +81,9 @@ export default function SprintsPage() {
             {data?.length ?? 0} sprint{(data?.length ?? 0) !== 1 ? 's' : ''}
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>New Sprint</Button>
+        {canCreateSprint && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>New Sprint</Button>
+        )}
       </Box>
 
       <Box sx={{ mb: 3 }}>
@@ -131,16 +135,20 @@ export default function SprintsPage() {
                     <TableCell>{fmt(sprint.start_date)}</TableCell>
                     <TableCell>{fmt(sprint.end_date)}</TableCell>
                     <TableCell align="right">
-                      <Tooltip title="Edit">
-                        <IconButton size="small" onClick={() => openEdit(sprint)}>
-                          <EditOutlinedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete">
-                        <IconButton size="small" color="error" onClick={() => setSprintToDelete(sprint)}>
-                          <DeleteOutlinedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
+                      {canEditSprint && (
+                        <Tooltip title="Edit">
+                          <IconButton size="small" onClick={() => openEdit(sprint)}>
+                            <EditOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {canDeleteSprint && (
+                        <Tooltip title="Delete">
+                          <IconButton size="small" color="error" onClick={() => setSprintToDelete(sprint)}>
+                            <DeleteOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
@@ -152,7 +160,9 @@ export default function SprintsPage() {
       {!isLoading && !isError && data?.length === 0 && (
         <Box sx={{ textAlign: 'center', mt: 8 }}>
           <Typography color="text.secondary" sx={{ mb: 2 }}>No sprints found.</Typography>
-          <Button variant="outlined" onClick={openCreate}>Create Sprint</Button>
+          {canCreateSprint && (
+            <Button variant="outlined" onClick={openCreate}>Create Sprint</Button>
+          )}
         </Box>
       )}
 
@@ -177,6 +187,8 @@ export default function SprintsPage() {
     </Box>
   )
 }
+
+
 
 
 

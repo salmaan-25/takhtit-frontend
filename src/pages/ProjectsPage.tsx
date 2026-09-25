@@ -15,6 +15,7 @@ import ProjectCard from '../components/projects/ProjectCard'
 import ProjectFormModal from '../components/projects/ProjectFormModal'
 import ProjectDetailModal from '../components/projects/ProjectDetailModal'
 import ConfirmDeleteDialog from '../components/common/ConfirmDeleteDialog'
+import { usePermissions } from '../hooks/usePermissions'
 
 interface FormData { name: string; key: string; description: string }
 
@@ -28,6 +29,7 @@ export default function ProjectsPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [snackbar, setSnackbar] = useState<string | null>(null)
 
+  const { canCreateProject } = usePermissions()
   const { data, isLoading, isError } = useGetProjectsQuery({ search, ordering })
   const [createProject, { isLoading: creating }] = useCreateProjectMutation()
   const [updateProject, { isLoading: updating }] = useUpdateProjectMutation()
@@ -74,7 +76,9 @@ export default function ProjectsPage() {
             {data?.length ?? 0} project{(data?.length ?? 0) !== 1 ? 's' : ''} total
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>New Project</Button>
+        {canCreateProject && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>New Project</Button>
+        )}
       </Box>
 
       <Box sx={{ display: 'flex', gap: 2, mb: 3.5, flexWrap: 'wrap' }}>
@@ -129,7 +133,9 @@ export default function ProjectsPage() {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             Create your first project to get started.
           </Typography>
-          <Button variant="contained" onClick={openCreate}>Create Project</Button>
+          {canCreateProject && (
+            <Button variant="contained" onClick={openCreate}>Create Project</Button>
+          )}
         </Box>
       )}
 
@@ -160,5 +166,6 @@ export default function ProjectsPage() {
     </Box>
   )
 }
+
 
 
