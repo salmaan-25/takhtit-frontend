@@ -1,4 +1,4 @@
-﻿import { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd'
 import {
   Box, Typography, Button, Alert, Snackbar,
@@ -108,7 +108,7 @@ export default function TicketsPage() {
   const openCreate = () => { setEditTicket(null); setFormOpen(true) }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0, minHeight: 0 }}>
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3.5, flexWrap: 'wrap', gap: 2 }}>
         <Box>
@@ -165,12 +165,12 @@ export default function TicketsPage() {
 
       {/* Views */}
       {isLoading ? (
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto', minWidth: 0 }}>
           {COLUMNS.map((c) => <Skeleton key={c.key} variant="rounded" sx={{ minWidth: 240, flex: 1 }} height={400} />)}
         </Box>
       ) : viewMode === 'board' ? (
         <DragDropContext onDragEnd={handleDragEnd}>
-          <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto', pb: 2, flexGrow: 1, alignItems: 'flex-start' }}>
+          <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto', pb: 2, flexGrow: 1, alignItems: 'flex-start', minWidth: 0, minHeight: 0 }}>
             {COLUMNS.map(({ key, label }) => (
               <KanbanColumn
                 key={key}
