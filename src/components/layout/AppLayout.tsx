@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Box, AppBar, Toolbar, IconButton, Typography, useTheme, useMediaQuery } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
@@ -29,7 +29,8 @@ export default function AppLayout() {
           minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column',
-          width: { md: `calc(100% - ${sidebarWidth}px)` },
+          width: { xs: '100%', md: `calc(100% - ${sidebarWidth}px)` },
+          minWidth: 0,
           transition: 'width 0.2s ease',
         }}
       >
@@ -47,7 +48,7 @@ export default function AppLayout() {
           </AppBar>
         )}
 
-        <Box sx={{ p: { xs: 2.5, md: 3.5 }, flexGrow: 1 }}>
+        <Box sx={{ p: { xs: 2, md: 3.5 }, flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <Outlet />
         </Box>
       </Box>

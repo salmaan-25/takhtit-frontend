@@ -1,4 +1,4 @@
-﻿/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from 'react'
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
@@ -71,7 +71,7 @@ export default function TicketFormModal({
             onChange={(e) => setDescription(e.target.value)}
             fullWidth multiline rows={3}
           />
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
             <FormControl fullWidth size="small">
               <InputLabel>Project *</InputLabel>
               <Select value={project} label="Project *" onChange={(e) => { setProject(e.target.value as number); setSprint('') }}>
@@ -86,7 +86,7 @@ export default function TicketFormModal({
               </Select>
             </FormControl>
           </Box>
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
             <FormControl fullWidth size="small">
               <InputLabel>Status</InputLabel>
               <Select value={status} label="Status" onChange={(e) => setStatus(e.target.value as Ticket['status'])}>

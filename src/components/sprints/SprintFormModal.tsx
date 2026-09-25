@@ -1,4 +1,4 @@
-﻿/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from 'react'
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
@@ -75,7 +75,7 @@ export default function SprintFormModal({ open, sprint, projects, defaultProject
               <MenuItem value="COMPLETED">Completed</MenuItem>
             </Select>
           </FormControl>
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
             <DatePicker
               label="Start Date"
               value={startDate}
