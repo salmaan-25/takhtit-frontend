@@ -1,10 +1,19 @@
-﻿export interface User {
+﻿export type OrgRole = 'ADMIN' | 'MEMBER' | 'VIEWER'
+
+export interface Organization {
+    id: number
+    name: string
+    slug: string
+}
+
+export interface User {
     id: number
     username: string
     email: string
     first_name: string
     last_name: string
-    role: 'ADMIN' | 'MEMBER'
+    organization: Organization | null
+    role: OrgRole | null
 }
 
 export interface Project {
@@ -48,3 +57,4 @@ export interface AuthTokens {
     access: string
     refresh: string
 }
+

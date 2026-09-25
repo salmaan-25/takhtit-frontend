@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+﻿import { useState, useCallback } from 'react'
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd'
 import {
   Box, Typography, Button, Alert, Snackbar,
@@ -16,6 +16,7 @@ import KanbanColumn from '../components/tickets/KanbanColumn'
 import TicketFormModal from '../components/tickets/TicketFormModal'
 import TicketListView from '../components/tickets/TicketListView'
 import ConfirmDeleteDialog from '../components/common/ConfirmDeleteDialog'
+import { usePermissions } from '../hooks/usePermissions'
 
 const COLUMNS: { key: Ticket['status']; label: string }[] = [
   { key: 'TODO',        label: 'To Do' },
@@ -28,6 +29,7 @@ type ViewMode = 'board' | 'list'
 
 export default function TicketsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('board')
+  const { canCreateTicket } = usePermissions()
   const [projectFilter, setProjectFilter] = useState<number | ''>('')
   const [sprintFilter, setSprintFilter] = useState<number | ''>('')
   const [formOpen, setFormOpen] = useState(false)
@@ -131,7 +133,7 @@ export default function TicketsPage() {
               <TableRowsOutlinedIcon fontSize="small" sx={{ mr: 0.75 }} /> List
             </ToggleButton>
           </ToggleButtonGroup>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>New Ticket</Button>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate} disabled={!canCreateTicket}>New Ticket</Button>
         </Box>
       </Box>
 
@@ -216,4 +218,5 @@ export default function TicketsPage() {
     </Box>
   )
 }
+
 

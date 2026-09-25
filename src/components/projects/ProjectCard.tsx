@@ -7,6 +7,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined'
 import type { Project } from '../../types'
+import { usePermissions } from '../../hooks/usePermissions'
 
 interface Props {
   project: Project
@@ -17,22 +18,28 @@ interface Props {
 
 export default function ProjectCard({ project, onView, onEdit, onDelete }: Props) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const { canEditProject, canDeleteProject } = usePermissions()
+
+  // Only show the menu button if the user has any write access
+  const showMenu = canEditProject || canDeleteProject
 
   return (
     <Card sx={{ height: '100%', position: 'relative' }}>
       {/* The MoreVert icon is OUTSIDE CardActionArea to avoid button-in-button */}
-      <Box
-        sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <IconButton
-          size="small"
-          onClick={(e) => { e.stopPropagation(); setAnchorEl(e.currentTarget) }}
-          sx={{ color: 'text.secondary' }}
+      {showMenu && (
+        <Box
+          sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}
+          onClick={(e) => e.stopPropagation()}
         >
-          <MoreVertIcon fontSize="small" />
-        </IconButton>
-      </Box>
+          <IconButton
+            size="small"
+            onClick={(e) => { e.stopPropagation(); setAnchorEl(e.currentTarget) }}
+            sx={{ color: 'text.secondary' }}
+          >
+            <MoreVertIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      )}
 
       <CardActionArea
         onClick={() => onView(project)}
@@ -71,14 +78,18 @@ export default function ProjectCard({ project, onView, onEdit, onDelete }: Props
       </CardActionArea>
 
       <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={() => setAnchorEl(null)}>
-        <MenuItem onClick={() => { onEdit(project); setAnchorEl(null) }}>
-          <ListItemIcon><EditOutlinedIcon fontSize="small" /></ListItemIcon>
-          <ListItemText>Edit</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={() => { onDelete(project); setAnchorEl(null) }} sx={{ color: 'error.main' }}>
-          <ListItemIcon><DeleteOutlinedIcon fontSize="small" sx={{ color: 'error.main' }} /></ListItemIcon>
-          <ListItemText>Delete</ListItemText>
-        </MenuItem>
+        {canEditProject && (
+          <MenuItem onClick={() => { onEdit(project); setAnchorEl(null) }}>
+            <ListItemIcon><EditOutlinedIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Edit</ListItemText>
+          </MenuItem>
+        )}
+        {canDeleteProject && (
+          <MenuItem onClick={() => { onDelete(project); setAnchorEl(null) }} sx={{ color: 'error.main' }}>
+            <ListItemIcon><DeleteOutlinedIcon fontSize="small" sx={{ color: 'error.main' }} /></ListItemIcon>
+            <ListItemText>Delete</ListItemText>
+          </MenuItem>
+        )}
       </Menu>
     </Card>
   )
