@@ -1,5 +1,5 @@
-﻿import { useState, useCallback } from 'react'
-import { useSelector } from 'react-redux'
+import { useState, useCallback } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
 import {
   Box, Typography, Chip, Grid, Paper, Skeleton, Alert, Snackbar,
   TextField, InputAdornment,
@@ -8,13 +8,12 @@ import SearchIcon from '@mui/icons-material/Search'
 import AssignmentLateOutlinedIcon from '@mui/icons-material/AssignmentLateOutlined'
 import {
   useGetMyTicketsQuery, useGetSprintsQuery, useGetUsersQuery,
-  useUpdateTicketMutation,
+  useGetProjectsQuery, useUpdateTicketMutation, apiSlice,
 } from '../store/api/apiSlice'
 import type { Ticket } from '../types'
-import type { RootState } from '../store'
+import type { RootState, AppDispatch } from '../store'
 import TicketListView from '../components/tickets/TicketListView'
 import TicketFormModal from '../components/tickets/TicketFormModal'
-import { useGetProjectsQuery } from '../store/api/apiSlice'
 
 const STATUS_TABS: { value: string; label: string; color: 'default' | 'warning' | 'info' | 'success' }[] = [
   { value: 'all',         label: 'All',         color: 'default' },
@@ -45,12 +44,28 @@ function StatCard({ label, value, color }: StatCardProps) {
   )
 }
 
+/** Extract a readable message from an RTK Query error */
+function getErrorMessage(err: unknown): string {
+  if (err && typeof err === 'object') {
+    const e = err as Record<string, unknown>
+    if (e.data && typeof e.data === 'object') {
+      const data = e.data as Record<string, unknown>
+      if (typeof data.detail === 'string') return data.detail
+      const first = Object.values(data)[0]
+      if (Array.isArray(first) && typeof first[0] === 'string') return first[0]
+    }
+    if (typeof e.error === 'string') return e.error
+  }
+  return 'Something went wrong. Please try again.'
+}
+
 export default function MyTicketsPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [editTicket, setEditTicket] = useState<Ticket | null>(null)
   const [formOpen, setFormOpen] = useState(false)
-  const [snackbar, setSnackbar] = useState<string | null>(null)
+  const [snackbar, setSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null)
+  const dispatch = useDispatch<AppDispatch>()
 
   const currentUser = useSelector((state: RootState) => state.auth.currentUser)
   const { data: tickets, isLoading, isError } = useGetMyTicketsQuery()
@@ -76,23 +91,33 @@ export default function MyTicketsPage() {
   }) ?? []
 
   const handleStatusChange = useCallback(async (ticketId: number, status: Ticket['status']) => {
+    // 1. Instantly update the cache — UI changes immediately
+    const patchResult = dispatch(
+      apiSlice.util.updateQueryData('getMyTickets', undefined, (draft) => {
+        const ticket = draft.find((t) => t.id === ticketId)
+        if (ticket) ticket.status = status
+      })
+    )
+
     try {
+      // 2. Fire the real API call in the background
       await updateTicket({ id: ticketId, body: { status } }).unwrap()
-      setSnackbar('Status updated.')
-    } catch {
-      setSnackbar('Failed to update status.')
+    } catch (err) {
+      // 3. On failure: revert and show the actual API error in the toast
+      patchResult.undo()
+      setSnackbar({ message: getErrorMessage(err), severity: 'error' })
     }
-  }, [updateTicket])
+  }, [updateTicket, dispatch])
 
   const handleSave = useCallback(async (formData: Partial<Ticket>) => {
     if (!editTicket) return
     try {
       await updateTicket({ id: editTicket.id, body: formData }).unwrap()
-      setSnackbar('Ticket updated!')
+      setSnackbar({ message: 'Ticket updated!', severity: 'success' })
       setFormOpen(false)
       setEditTicket(null)
-    } catch {
-      setSnackbar('Something went wrong.')
+    } catch (err) {
+      setSnackbar({ message: getErrorMessage(err), severity: 'error' })
     }
   }, [editTicket, updateTicket])
 
@@ -202,13 +227,16 @@ export default function MyTicketsPage() {
           loading={updating}
         />
       )}
-      <Snackbar open={!!snackbar} autoHideDuration={3500} onClose={() => setSnackbar(null)} message={snackbar} />
+
+      <Snackbar
+        open={!!snackbar}
+        autoHideDuration={3500}
+        onClose={() => setSnackbar(null)}
+        message={snackbar?.message}
+        slotProps={{ content: { sx: snackbar?.severity === 'error'
+            ? { bgcolor: 'error.dark', color: 'error.contrastText' }
+            : { bgcolor: 'success.dark', color: 'success.contrastText' } } }}
+      />
     </Box>
   )
 }
-
-
-
-
-
-

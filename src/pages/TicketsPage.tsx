@@ -1,4 +1,4 @@
-﻿import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd'
 import {
   Box, Typography, Button, Alert, Snackbar,
@@ -10,7 +10,10 @@ import TableRowsOutlinedIcon from '@mui/icons-material/TableRowsOutlined'
 import {
   useGetTicketsQuery, useGetProjectsQuery, useGetSprintsQuery, useGetUsersQuery,
   useCreateTicketMutation, useUpdateTicketMutation, useDeleteTicketMutation,
+  apiSlice,
 } from '../store/api/apiSlice'
+import { useDispatch } from 'react-redux'
+import type { AppDispatch } from '../store'
 import type { Ticket, Project, Sprint } from '../types'
 import KanbanColumn from '../components/tickets/KanbanColumn'
 import TicketFormModal from '../components/tickets/TicketFormModal'
@@ -27,6 +30,21 @@ const COLUMNS: { key: Ticket['status']; label: string }[] = [
 
 type ViewMode = 'board' | 'list'
 
+/** Extract a readable message from an RTK Query error */
+function getErrorMessage(err: unknown): string {
+  if (err && typeof err === 'object') {
+    const e = err as Record<string, unknown>
+    if (e.data && typeof e.data === 'object') {
+      const data = e.data as Record<string, unknown>
+      if (typeof data.detail === 'string') return data.detail
+      const first = Object.values(data)[0]
+      if (Array.isArray(first) && typeof first[0] === 'string') return first[0]
+    }
+    if (typeof e.error === 'string') return e.error
+  }
+  return 'Something went wrong. Please try again.'
+}
+
 export default function TicketsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('board')
   const { canCreateTicket } = usePermissions()
@@ -35,7 +53,8 @@ export default function TicketsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editTicket, setEditTicket] = useState<Ticket | null>(null)
   const [ticketToDelete, setTicketToDelete] = useState<Ticket | null>(null)
-  const [snackbar, setSnackbar] = useState<string | null>(null)
+  const [snackbar, setSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null)
+  const dispatch = useDispatch<AppDispatch>()
 
   const { data: projectsData } = useGetProjectsQuery()
   const { data: sprintsData } = useGetSprintsQuery(
@@ -43,12 +62,13 @@ export default function TicketsPage() {
   )
   const { data: usersData } = useGetUsersQuery()
 
-  const ticketParams = (() => {
+  // Stable reference — only changes when the filter values actually change
+  const ticketParams = useMemo<{ project?: number; sprint?: number } | undefined>(() => {
     const p: { project?: number; sprint?: number } = {}
     if (projectFilter !== '') p.project = projectFilter as number
     if (sprintFilter !== '') p.sprint = sprintFilter as number
     return Object.keys(p).length > 0 ? p : undefined
-  })()
+  }, [projectFilter, sprintFilter])
 
   const { data: tickets, isLoading, isError } = useGetTicketsQuery(ticketParams)
   const [createTicket, { isLoading: creating }] = useCreateTicketMutation()
@@ -58,39 +78,54 @@ export default function TicketsPage() {
   const getByStatus = (status: Ticket['status']) =>
     tickets?.filter((t) => t.status === status) ?? []
 
+  // ── Optimistic status change helper ────────────────────────────────────────
+  const optimisticStatusUpdate = useCallback(
+    async (ticketId: number, newStatus: Ticket['status']) => {
+      // 1. Instantly update the cache (UI changes immediately)
+      const patchResult = dispatch(
+        apiSlice.util.updateQueryData('getTickets', ticketParams, (draft) => {
+          const ticket = draft.find((t) => t.id === ticketId)
+          if (ticket) ticket.status = newStatus
+        })
+      )
+
+      try {
+        // 2. Fire the real API call in the background
+        await updateTicket({ id: ticketId, body: { status: newStatus } }).unwrap()
+      } catch (err) {
+        // 3. On failure: revert the cache and show the API error message
+        patchResult.undo()
+        setSnackbar({ message: getErrorMessage(err), severity: 'error' })
+      }
+    },
+    [dispatch, ticketParams, updateTicket]
+  )
+
   const handleDragEnd = useCallback(async (result: DropResult) => {
     if (!result.destination || result.destination.droppableId === result.source.droppableId) return
-    try {
-      await updateTicket({
-        id: Number(result.draggableId),
-        body: { status: result.destination.droppableId as Ticket['status'] },
-      }).unwrap()
-    } catch {
-      setSnackbar('Failed to move ticket.')
-    }
-  }, [updateTicket])
+    await optimisticStatusUpdate(
+      Number(result.draggableId),
+      result.destination.droppableId as Ticket['status']
+    )
+  }, [optimisticStatusUpdate])
 
   const handleStatusChange = useCallback(async (ticketId: number, status: Ticket['status']) => {
-    try {
-      await updateTicket({ id: ticketId, body: { status } }).unwrap()
-    } catch {
-      setSnackbar('Failed to update status.')
-    }
-  }, [updateTicket])
+    await optimisticStatusUpdate(ticketId, status)
+  }, [optimisticStatusUpdate])
 
   const handleSave = useCallback(async (formData: Partial<Ticket>) => {
     try {
       if (editTicket) {
         await updateTicket({ id: editTicket.id, body: formData }).unwrap()
-        setSnackbar('Ticket updated!')
+        setSnackbar({ message: 'Ticket updated!', severity: 'success' })
       } else {
         await createTicket(formData).unwrap()
-        setSnackbar('Ticket created!')
+        setSnackbar({ message: 'Ticket created!', severity: 'success' })
       }
       setFormOpen(false)
       setEditTicket(null)
-    } catch {
-      setSnackbar('Something went wrong.')
+    } catch (err) {
+      setSnackbar({ message: getErrorMessage(err), severity: 'error' })
     }
   }, [editTicket, updateTicket, createTicket])
 
@@ -98,11 +133,11 @@ export default function TicketsPage() {
     if (!ticketToDelete) return
     try {
       await deleteTicketMutation(ticketToDelete.id).unwrap()
-      setSnackbar('Ticket deleted.')
+      setSnackbar({ message: 'Ticket deleted.', severity: 'success' })
       setTicketToDelete(null)
       setFormOpen(false)
-    } catch {
-      setSnackbar('Failed to delete ticket.')
+    } catch (err) {
+      setSnackbar({ message: getErrorMessage(err), severity: 'error' })
     }
   }, [ticketToDelete, deleteTicketMutation])
 
@@ -214,9 +249,16 @@ export default function TicketsPage() {
         onConfirm={handleDelete}
         onCancel={() => setTicketToDelete(null)}
       />
-      <Snackbar open={!!snackbar} autoHideDuration={3500} onClose={() => setSnackbar(null)} message={snackbar} />
+
+      <Snackbar
+        open={!!snackbar}
+        autoHideDuration={3500}
+        onClose={() => setSnackbar(null)}
+        message={snackbar?.message}
+        slotProps={{ content: { sx: snackbar?.severity === 'error'
+            ? { bgcolor: 'error.dark', color: 'error.contrastText' }
+            : { bgcolor: 'success.dark', color: 'success.contrastText' } } }}
+      />
     </Box>
   )
 }
-
-
