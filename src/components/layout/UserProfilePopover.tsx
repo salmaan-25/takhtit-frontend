@@ -20,12 +20,12 @@ export default function UserProfilePopover({
   onMouseEnter,
   onMouseLeave,
 }: UserProfilePopoverProps) {
-  const displayName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'User Account'
+  const displayName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'Account'
   const initial = (user?.first_name?.trim()?.[0] || user?.username?.trim()?.[0] || 'U').toUpperCase()
-  const roleLabel = (user?.role || 'ADMIN').toUpperCase()
-  const email = user?.email || (user?.username ? `${user.username}@takhtit.io` : 'user@takhtit.io')
-  const usernameFormatted = user?.username ? `@${user.username}` : '@username'
-  const organizationName = user?.organization?.name || 'Tax Dude'
+  const roleLabel = user?.role ? user.role.toUpperCase() : null
+  const email = user?.email?.trim() || ''
+  const usernameFormatted = user?.username ? `@${user.username}` : 'Not set'
+  const organizationName = user?.organization?.name?.trim() || 'Not set'
 
   return (
     <Popper
@@ -134,39 +134,42 @@ export default function UserProfilePopover({
                   >
                     {displayName}
                   </Typography>
-                  <Box
-                    component="span"
-                    sx={{
-                      bgcolor: isDark ? '#082f49' : '#e0f2fe',
-                      color: isDark ? '#38bdf8' : '#0369a1',
-                      border: '1px solid',
-                      borderColor: isDark
-                        ? 'rgba(3, 105, 161, 0.6)'
-                        : 'rgba(56, 189, 248, 0.5)',
-                      fontSize: '9px',
-                      fontWeight: 700,
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
-                      px: 0.75,
-                      py: 0.15,
-                      borderRadius: '4px',
-                      lineHeight: 1.3,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {roleLabel}
-                  </Box>
+                  {roleLabel && (
+                    <Box
+                      component="span"
+                      sx={{
+                        bgcolor: isDark ? '#082f49' : '#e0f2fe',
+                        color: isDark ? '#38bdf8' : '#0369a1',
+                        border: '1px solid',
+                        borderColor: isDark
+                          ? 'rgba(3, 105, 161, 0.6)'
+                          : 'rgba(56, 189, 248, 0.5)',
+                        fontSize: '9px',
+                        fontWeight: 700,
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        px: 0.75,
+                        py: 0.15,
+                        borderRadius: '4px',
+                        lineHeight: 1.3,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {roleLabel}
+                    </Box>
+                  )}
                 </Box>
                 <Typography
                   noWrap
-                  title={email}
+                  title={email || 'Email not set'}
                   sx={{
                     fontSize: '0.75rem',
-                    color: isDark ? '#a1a1aa' : '#64748b',
+                    color: email ? (isDark ? '#a1a1aa' : '#64748b') : (isDark ? '#71717a' : '#94a3b8'),
+                    fontStyle: email ? 'normal' : 'italic',
                     mt: 0.25,
                   }}
                 >
-                  {email}
+                  {email || 'Email not set'}
                 </Typography>
               </Box>
             </Box>
@@ -206,7 +209,8 @@ export default function UserProfilePopover({
                   sx={{
                     fontSize: '0.75rem',
                     fontWeight: 500,
-                    color: isDark ? '#e4e4e7' : '#1e293b',
+                    color: user?.username ? (isDark ? '#e4e4e7' : '#1e293b') : (isDark ? '#71717a' : '#94a3b8'),
+                    fontStyle: user?.username ? 'normal' : 'italic',
                   }}
                 >
                   {usernameFormatted}
@@ -233,16 +237,17 @@ export default function UserProfilePopover({
                 </Typography>
                 <Typography
                   noWrap
-                  title={email}
+                  title={email || 'Email not set'}
                   sx={{
                     fontSize: '0.75rem',
                     fontWeight: 500,
-                    color: isDark ? '#e4e4e7' : '#1e293b',
+                    color: email ? (isDark ? '#e4e4e7' : '#1e293b') : (isDark ? '#71717a' : '#94a3b8'),
+                    fontStyle: email ? 'normal' : 'italic',
                     maxWidth: 220,
                     textAlign: 'right',
                   }}
                 >
-                  {email}
+                  {email || 'Not set'}
                 </Typography>
               </Box>
 
@@ -270,7 +275,8 @@ export default function UserProfilePopover({
                   sx={{
                     fontSize: '0.75rem',
                     fontWeight: 500,
-                    color: isDark ? '#e4e4e7' : '#1e293b',
+                    color: user?.organization?.name ? (isDark ? '#e4e4e7' : '#1e293b') : (isDark ? '#71717a' : '#94a3b8'),
+                    fontStyle: user?.organization?.name ? 'normal' : 'italic',
                     maxWidth: 200,
                     textAlign: 'right',
                   }}
