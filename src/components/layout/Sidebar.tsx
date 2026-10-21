@@ -1,7 +1,7 @@
-﻿import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useColorScheme } from '@mui/material/styles'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import {
   Box, Drawer, List, ListItem, ListItemButton, ListItemIcon,
   Typography, Avatar, IconButton, Tooltip, Divider, Dialog,
@@ -16,7 +16,10 @@ import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined'
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import { logOut } from '../../store/slice/authSlice'
+import { logOut, setCurrentUser } from '../../store/slice/authSlice'
+import type { RootState } from '../../store'
+import { useGetMeQuery } from '../../store/api/apiSlice'
+import UserProfilePopover from './UserProfilePopover'
 
 export const DRAWER_WIDTH = 220
 export const MINI_DRAWER_WIDTH = 58
@@ -42,8 +45,60 @@ function DrawerContent({ collapsed, onToggle }: { collapsed: boolean; onToggle: 
   const dispatch = useDispatch()
   const [logoutOpen, setLogoutOpen] = useState(false)
   const { mode, setMode } = useColorScheme()
+  const isDark = mode === 'dark'
+
+  // User profile data from Redux / API
+  const currentUser = useSelector((state: RootState) => state.auth.currentUser)
+  const { data: meData } = useGetMeQuery()
+  const user = meData || currentUser
+
+  useEffect(() => {
+    if (meData) {
+      dispatch(setCurrentUser(meData))
+    }
+  }, [meData, dispatch])
+
+  const displayName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'My Account'
+  const initial = (user?.first_name?.trim()?.[0] || user?.username?.trim()?.[0] || 'U').toUpperCase()
+
+  // Anchored Popover state & handlers
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+  const [isOpen, setIsOpen] = useState(false)
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleMouseEnter = (event: React.MouseEvent<HTMLElement>) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
+    setAnchorEl(event.currentTarget)
+    setIsOpen(true)
+  }
+
+  const handleMouseLeave = () => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsOpen(false)
+    }, 120)
+  }
+
+  const handlePopoverMouseEnter = () => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
+  }
+
+  const handlePopoverMouseLeave = () => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsOpen(false)
+    }, 120)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
+    }
+  }, [])
 
   const handleLogout = () => {
+    setIsOpen(false)
+    setAnchorEl(null)
     dispatch(logOut())
     navigate('/login')
   }
@@ -140,15 +195,90 @@ function DrawerContent({ collapsed, onToggle }: { collapsed: boolean; onToggle: 
         display: 'flex', alignItems: 'center',
         justifyContent: collapsed ? 'center' : 'space-between', gap: 1,
       }}>
-        {!collapsed && (
-          <>
-            <Avatar sx={{ width: 28, height: 28, bgcolor: 'primary.dark', fontSize: '0.75rem' }}>U</Avatar>
-            <Typography variant="body2" sx={{ flexGrow: 1, fontWeight: 500, fontSize: '0.85rem', color: 'text.secondary' }}>
-              My Account
+        {/* Profile Trigger Button with hover popover support */}
+        <Box
+          component="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            if (isOpen) {
+              setIsOpen(false)
+            } else {
+              setAnchorEl(e.currentTarget)
+              setIsOpen(true)
+            }
+          }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.25,
+            p: 0.5,
+            borderRadius: '8px',
+            bgcolor: isOpen ? 'action.selected' : 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            textAlign: 'left',
+            color: 'inherit',
+            transition: 'background-color 0.15s ease',
+            outline: 'none',
+            minWidth: 0,
+            maxWidth: collapsed ? 'auto' : 130,
+            '&:hover': {
+              bgcolor: 'action.hover',
+            },
+            '&:focus-visible': {
+              outline: '2px solid',
+              outlineColor: 'primary.main',
+            },
+          }}
+        >
+          <Box sx={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
+            <Avatar
+              sx={{
+                width: 28,
+                height: 28,
+                bgcolor: '#1976d2',
+                color: '#ffffff',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+              }}
+            >
+              {initial}
+            </Avatar>
+            <Box
+              component="span"
+              sx={{
+                position: 'absolute',
+                bottom: -1,
+                right: -1,
+                width: 8,
+                height: 8,
+                bgcolor: '#10b981',
+                border: '1.5px solid',
+                borderColor: 'background.paper',
+                borderRadius: '50%',
+              }}
+            />
+          </Box>
+          {!collapsed && (
+            <Typography
+              noWrap
+              sx={{
+                fontSize: '0.825rem',
+                fontWeight: 500,
+                color: 'text.primary',
+                maxWidth: 82,
+              }}
+            >
+              {displayName}
             </Typography>
-          </>
-        )}
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          )}
+        </Box>
+
+        {/* Theme and direct logout buttons */}
+        <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
           <Tooltip title={mode === 'dark' ? 'Light Mode' : 'Dark Mode'} placement={collapsed ? 'right' : 'top'}>
             <IconButton size="small" onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')} sx={{ color: 'text.secondary' }}>
               {mode === 'dark' ? <LightModeOutlinedIcon sx={{ fontSize: 17 }} /> : <DarkModeOutlinedIcon sx={{ fontSize: 17 }} />}
@@ -161,6 +291,17 @@ function DrawerContent({ collapsed, onToggle }: { collapsed: boolean; onToggle: 
           </Tooltip>
         </Box>
       </Box>
+
+      {/* MUI User Profile Popover as per Stitch design */}
+      <UserProfilePopover
+        open={isOpen}
+        anchorEl={anchorEl}
+        placement={collapsed ? 'right-end' : 'top-start'}
+        user={user}
+        isDark={isDark}
+        onMouseEnter={handlePopoverMouseEnter}
+        onMouseLeave={handlePopoverMouseLeave}
+      />
 
       {/* Logout confirmation */}
       <Dialog open={logoutOpen} onClose={() => setLogoutOpen(false)} maxWidth="xs" fullWidth>
