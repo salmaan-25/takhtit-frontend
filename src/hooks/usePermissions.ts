@@ -1,4 +1,4 @@
-﻿import { useSelector } from 'react-redux'
+import { useSelector } from 'react-redux'
 import type { RootState } from '../store'
 import type { OrgRole } from '../types'
 
@@ -27,10 +27,10 @@ export function usePermissions() {
         isViewer,
         role,
 
-        // Project permissions (Admin only)
-        canCreateProject: isAdmin,
-        canEditProject: isAdmin,
-        canDeleteProject: isAdmin,
+        // Project permissions (Admin + Member can write)
+        canCreateProject: isMember,
+        canEditProject: isMember,
+        canDeleteProject: isMember,
 
         // Sprint permissions (Admin + Member can write)
         canCreateSprint: isMember,
